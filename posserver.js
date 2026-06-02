@@ -11,9 +11,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const pool = new Pool({
     user: 'postgres',
-    host: 'localhost',
+    host: '127.0.0.1', // 🟢 'localhost' အစား '127.0.0.1' ဟု ပြင်ပေးပါ
     database: 'pos_cloud_db',
-    password: 'your_postgresql_password', // 🔑 အစ်ကို့ DB Password အမှန် ပြင်ထည့်ပါ
+    password: 'your_postgresql_password', 
     port: 5432,
 });
 
