@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UN Mobile POS - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; }
+        .sidebar { height: 100vh; background-color: #004D73; color: white; padding-top: 20px; }
+        .sidebar a { color: #cfd8dc; text-decoration: none; padding: 10px 20px; display: block; }
+        .sidebar a:hover { background-color: #00334e; color: white; }
+        .card-header { background-color: #004D73; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar">
+            <h4 class="text-center mb-4">UN POS Admin</h4>
+            <a href="#" onclick="showSection('usersSection')">🏠 ယူဆာများ စီမံရန်</a>
+            <a href="#" onclick="showSection('backupSection')">💾 Backup & Restore</a>
+        </div>
+
+        <div class="col-md-10 p-4">
+            
+            <div id="usersSection">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>အသုံးပြုသူများ (Users)</h3>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">+ User အသစ်ထည့်မည်</button>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>ဆိုင်အမည်</th>
+                                    <th>မှတ်ပုံတင်သည့်ရက်</th>
+                                    <th>လုပ်ဆောင်ချက်</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="userDataSection" style="display: none;">
+                <button class="btn btn-secondary mb-3" onclick="showSection('usersSection')">⬅ နောက်သို့</button>
+                <h3 id="viewUserTitle">User Data</h3>
+                <div class="card">
+                    <div class="card-header">ကုန်ပစ္စည်းစာရင်းများ</div>
+                    <div class="card-body">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr><th>အမည်</th><th>ဘားကုဒ်</th><th>ဝယ်စျေး</th><th>ရောင်းစျေး</th><th>လက်ကျန်</th></tr>
+                            </thead>
+                            <tbody id="productTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="backupSection" style="display: none;">
+                <h3>Backup & Restore</h3>
+                <div class="alert alert-info mt-3">
+                    Backup နှင့် Restore လုပ်ဆောင်ချက်များကို နောက်တစ်ဆင့်တွင် ဆက်လက်ရေးသားပါမည်။
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">User အသစ်ဖန်တီးရန်</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label>Username</label><input type="text" id="newUsername" class="form-control"></div>
+        <div class="mb-3"><label>Password</label><input type="password" id="newPassword" class="form-control"></div>
+        <div class="mb-3"><label>ဆိုင်အမည်</label><input type="text" id="newShopName" class="form-control"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ပိတ်မည်</button>
+        <button type="button" class="btn btn-primary" onclick="addUser()">သိမ်းမည်</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Section အကူးအပြောင်း
+    function showSection(sectionId) {
+        document.getElementById('usersSection').style.display = 'none';
+        document.getElementById('userDataSection').style.display = 'none';
+        document.getElementById('backupSection').style.display = 'none';
+        document.getElementById(sectionId).style.display = 'block';
+    }
+
+    // User များကို ဆွဲထုတ်ခြင်း
+    async function loadUsers() {
+        const res = await fetch('/api/admin/users');
+        const users = await res.json();
+        let html = '';
+        users.forEach(user => {
+            html += `<tr>
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td>${user.shop_name || '-'}</td>
+                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn btn-sm btn-info text-white" onclick="viewUserData(${user.id}, '${user.shop_name}')">Data ကြည့်မည်</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('userTableBody').innerHTML = html;
+    }
+
+    // User အသစ် ဖန်တီးခြင်း
+    async function addUser() {
+        const username = document.getElementById('newUsername').value;
+        const password = document.getElementById('newPassword').value;
+        const shop_name = document.getElementById('newShopName').value;
+
+        const res = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, shop_name })
+        });
+
+        if(res.ok) {
+            alert("User အသစ်အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
+            // Modal ပိတ်ပြီး Data ပြန်ခေါ်မည်
+            var modalEl = document.getElementById('addUserModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            loadUsers();
+        } else {
+            alert("Error ဖြစ်နေပါသည်။ Username တူနေခြင်းမျိုး ဖြစ်နိုင်ပါသည်။");
+        }
+    }
+
+    // သီးသန့် User ၏ Data (Products) ကို ကြည့်ခြင်း
+    async function viewUserData(userId, shopName) {
+        showSection('userDataSection');
+        document.getElementById('viewUserTitle').innerText = `${shopName} ၏ ကုန်ပစ္စည်း Data များ`;
+        
+        const res = await fetch(`/api/admin/users/${userId}/products`);
+        const products = await res.json();
+        
+        let html = '';
+        if(products.length === 0) html = `<tr><td colspan="5" class="text-center">ကုန်ပစ္စည်း မရှိသေးပါ</td></tr>`;
+        products.forEach(p => {
+            html += `<tr>
+                <td>${p.name}</td>
+                <td>${p.barcode}</td>
+                <td>${p.cost_price}</td>
+                <td>${p.retail_price}</td>
+                <td>${p.stock_qty} ${p.unit}</td>
+            </tr>`;
+        });
+        document.getElementById('productTableBody').innerHTML = html;
+    }
+
+    // အစပွင့်ပွင့်ချင်း User များကို ခေါ်ပြထားမည်
+    loadUsers();
+</script>
+
+</body>
+</html>
