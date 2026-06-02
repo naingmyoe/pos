@@ -10,10 +10,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const pool = new Pool({
-    user: 'postgres',
+    user: 'naing',
     host: '127.0.0.1', // 🟢 'localhost' အစား '127.0.0.1' ဟု ပြင်ပေးပါ
     database: 'pos_cloud_db',
-    password: 'your_postgresql_password', 
+    password: 'naing', 
     port: 5432,
 });
 
