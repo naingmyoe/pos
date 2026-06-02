@@ -38,6 +38,7 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Username</th>
+                                    <th>Password</th>
                                     <th>ဆိုင်အမည်</th>
                                     <th>မှတ်ပုံတင်သည့်ရက်</th>
                                     <th>လုပ်ဆောင်ချက်</th>
@@ -57,7 +58,7 @@
                     <div class="card-header">ကုန်ပစ္စည်းစာရင်းများ</div>
                     <div class="card-body">
                         <table class="table table-bordered">
-                            <thead>
+                            <thead class="table-light">
                                 <tr><th>အမည်</th><th>ဘားကုဒ်</th><th>ဝယ်စျေး</th><th>ရောင်းစျေး</th><th>လက်ကျန်</th></tr>
                             </thead>
                             <tbody id="productTableBody"></tbody>
@@ -108,23 +109,28 @@
         document.getElementById(sectionId).style.display = 'block';
     }
 
-    // User များကို ဆွဲထုတ်ခြင်း
+    // User များကို ဆွဲထုတ်ခြင်း (Password ပါဝင်သည်)
     async function loadUsers() {
-        const res = await fetch('/api/admin/users');
-        const users = await res.json();
-        let html = '';
-        users.forEach(user => {
-            html += `<tr>
-                <td>${user.id}</td>
-                <td>${user.username}</td>
-                <td>${user.shop_name || '-'}</td>
-                <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                <td>
-                    <button class="btn btn-sm btn-info text-white" onclick="viewUserData(${user.id}, '${user.shop_name}')">Data ကြည့်မည်</button>
-                </td>
-            </tr>`;
-        });
-        document.getElementById('userTableBody').innerHTML = html;
+        try {
+            const res = await fetch('/api/admin/users');
+            const users = await res.json();
+            let html = '';
+            users.forEach(user => {
+                html += `<tr>
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td><span class="text-danger fw-bold">${user.password}</span></td>
+                    <td>${user.shop_name || '-'}</td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info text-white" onclick="viewUserData(${user.id}, '${user.shop_name}')">Data ကြည့်မည်</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('userTableBody').innerHTML = html;
+        } catch (error) {
+            console.error("Error loading users:", error);
+        }
     }
 
     // User အသစ် ဖန်တီးခြင်း
@@ -133,21 +139,33 @@
         const password = document.getElementById('newPassword').value;
         const shop_name = document.getElementById('newShopName').value;
 
-        const res = await fetch('/api/admin/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, shop_name })
-        });
+        if(!username || !password) {
+            alert("Username နှင့် Password ထည့်ရန် လိုအပ်ပါသည်။");
+            return;
+        }
 
-        if(res.ok) {
-            alert("User အသစ်အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
-            // Modal ပိတ်ပြီး Data ပြန်ခေါ်မည်
-            var modalEl = document.getElementById('addUserModal');
-            var modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-            loadUsers();
-        } else {
-            alert("Error ဖြစ်နေပါသည်။ Username တူနေခြင်းမျိုး ဖြစ်နိုင်ပါသည်။");
+        try {
+            const res = await fetch('/api/admin/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, shop_name })
+            });
+
+            if(res.ok) {
+                alert("User အသစ်အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newShopName').value = '';
+                
+                var modalEl = document.getElementById('addUserModal');
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+                loadUsers();
+            } else {
+                alert("Error ဖြစ်နေပါသည်။ Username တူနေခြင်းမျိုး ဖြစ်နိုင်ပါသည်။");
+            }
+        } catch (error) {
+            console.error("Error adding user:", error);
         }
     }
 
@@ -156,21 +174,25 @@
         showSection('userDataSection');
         document.getElementById('viewUserTitle').innerText = `${shopName} ၏ ကုန်ပစ္စည်း Data များ`;
         
-        const res = await fetch(`/api/admin/users/${userId}/products`);
-        const products = await res.json();
-        
-        let html = '';
-        if(products.length === 0) html = `<tr><td colspan="5" class="text-center">ကုန်ပစ္စည်း မရှိသေးပါ</td></tr>`;
-        products.forEach(p => {
-            html += `<tr>
-                <td>${p.name}</td>
-                <td>${p.barcode}</td>
-                <td>${p.cost_price}</td>
-                <td>${p.retail_price}</td>
-                <td>${p.stock_qty} ${p.unit}</td>
-            </tr>`;
-        });
-        document.getElementById('productTableBody').innerHTML = html;
+        try {
+            const res = await fetch(`/api/admin/users/${userId}/products`);
+            const products = await res.json();
+            
+            let html = '';
+            if(products.length === 0) html = `<tr><td colspan="5" class="text-center">ကုန်ပစ္စည်း မရှိသေးပါ</td></tr>`;
+            products.forEach(p => {
+                html += `<tr>
+                    <td>${p.name}</td>
+                    <td>${p.barcode || '-'}</td>
+                    <td>${p.cost_price || 0}</td>
+                    <td>${p.retail_price || 0}</td>
+                    <td>${p.stock_qty || 0} ${p.unit || ''}</td>
+                </tr>`;
+            });
+            document.getElementById('productTableBody').innerHTML = html;
+        } catch (error) {
+            console.error("Error loading products:", error);
+        }
     }
 
     // အစပွင့်ပွင့်ချင်း User များကို ခေါ်ပြထားမည်
